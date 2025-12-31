@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Neon Vector | Beta 5.4</title>
     
-    <!-- SEO & App Meta Tags -->
-    <title>Neon Vector | Beta 5.2</title>
-    <meta name="description" content="Sobreviva às ondas de inimigos neon neste Roguelite Shooter intenso. Jogue agora no seu navegador!">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
 
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -25,39 +22,39 @@
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: var(--bg-dark);
+            background-color: var(--bg-dark);
             font-family: 'Orbitron', sans-serif;
             touch-action: none; user-select: none; -webkit-user-select: none;
+            overflow: hidden; position: fixed;
         }
 
-        #gameCanvas { display: block; width: 100%; height: 100%; }
+        /* Cursor de Mira no PC */
+        body.pc-mode { cursor: crosshair; }
 
-        /* UI Base */
+        #gameCanvas {
+            position: absolute; top: 0; left: 0; display: block; z-index: 1;
+        }
+
         #ui-layer, .modal-overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; 
+            pointer-events: none; z-index: 10;
         }
+        
         .modal-overlay { 
-            background: rgba(5, 5, 5, 0.95); 
-            backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; 
-            pointer-events: auto; z-index: 100;
-            transition: opacity 0.3s;
+            background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            pointer-events: auto; z-index: 100; transition: opacity 0.3s;
         }
 
         /* Typography */
         h1 { 
-            font-size: clamp(40px, 10vmin, 100px); 
-            color: transparent; 
-            -webkit-text-stroke: 2px var(--neon-blue); 
-            text-shadow: 0 0 30px var(--neon-blue); 
+            font-size: clamp(40px, 10vmin, 100px); color: transparent; 
+            -webkit-text-stroke: 2px var(--neon-blue); text-shadow: 0 0 30px var(--neon-blue); 
             margin: 0; text-align: center; letter-spacing: -2px;
         }
-        h2 { color: #fff; text-shadow: 0 0 10px var(--neon-blue); margin-bottom: 20px; text-align: center; }
         p { font-family: 'Rajdhani', sans-serif; color: #aaa; text-align: center; }
 
-        /* HUD Elements */
+        /* HUD */
         .hud-top {
             position: absolute; top: max(15px, env(safe-area-inset-top)); width: 100%;
             display: flex; justify-content: space-between; padding: 0 5%;
@@ -70,7 +67,6 @@
         #xp-bar { height: 100%; background: var(--neon-green); width: 0%; box-shadow: 0 0 10px var(--neon-green); transition: width 0.2s; }
         #hp-bar { height: 100%; background: #f00; width: 100%; box-shadow: 0 0 10px #f00; transition: width 0.1s; }
 
-        /* Boss Bar */
         #boss-hud {
             position: absolute; top: 12%; left: 50%; transform: translateX(-50%);
             width: 50%; display: none; flex-direction: column; align-items: center;
@@ -79,7 +75,23 @@
         #boss-hp-bg { width: 100%; height: 8px; background: #300; border: 1px solid var(--neon-pink); }
         #boss-hp-bar { width: 100%; height: 100%; background: var(--neon-pink); transition: width 0.1s; }
 
-        /* Controls */
+        /* PC Skill Indicator */
+        #pc-skill-hud {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: none; flex-direction: column; align-items: center; gap: 5px;
+        }
+        #pc-skill-label { color: #fff; font-size: 12px; letter-spacing: 2px; text-shadow: 0 0 5px var(--neon-blue); }
+        #pc-skill-bg {
+            width: 200px; height: 10px; background: #222; border: 1px solid #555; border-radius: 5px; overflow: hidden;
+        }
+        #pc-skill-bar {
+            width: 100%; height: 100%; background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue);
+            transition: width 0.1s linear;
+        }
+        .skill-ready #pc-skill-bar { background: #fff; box-shadow: 0 0 20px #fff; }
+        .skill-cooldown #pc-skill-bar { background: #555; box-shadow: none; }
+
+        /* Mobile Controls */
         .joystick-zone {
             position: absolute; bottom: max(30px, env(safe-area-inset-bottom));
             width: clamp(120px, 25vmin, 200px); height: clamp(120px, 25vmin, 200px);
@@ -105,7 +117,6 @@
             font-size: 30px; pointer-events: auto; box-shadow: 0 0 10px #fff;
             cursor: pointer; transition: transform 0.1s; user-select: none;
         }
-        #shockwave-btn:active { transform: scale(0.9); background: #fff; color: #000; }
         #shockwave-btn.cooldown { border-color: #555; color: #555; box-shadow: none; pointer-events: none; }
         .cooldown-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7);
@@ -123,11 +134,8 @@
         }
         .btn-neon:hover { background: rgba(0,255,255,0.1); box-shadow: 0 0 25px rgba(0,255,255,0.4); }
         .btn-neon:active { background: var(--neon-blue); color: #000; transform: scale(0.98); }
-        
         .btn-red { border-color: #f00; color: #f00; box-shadow: 0 0 10px #500; }
-        .btn-red:hover { box-shadow: 0 0 20px #f00; }
 
-        /* Cards */
         .cards-container { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 800px; }
         .card {
             width: clamp(110px, 28vmin, 160px); height: clamp(170px, 42vmin, 240px);
@@ -137,32 +145,21 @@
             cursor: pointer; position: relative; transition: transform 0.2s;
         }
         .card:hover { transform: translateY(-5px); border-color: var(--neon-blue); }
-        .card h3 { color: var(--neon-blue); font-size: 14px; margin: 0; text-align: center; }
-        .card p { color: #ccc; font-size: 11px; text-align: center; line-height: 1.2; font-family: 'Rajdhani'; }
-        .card .icon { font-size: 40px; }
         .card.locked { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
         .card.boss-card { border-color: var(--neon-pink); box-shadow: 0 0 20px rgba(255,0,255,0.2); }
 
         .hidden { display: none !important; opacity: 0; }
-        
-        /* Pause Button */
-        #pause-trigger {
-            font-size: 24px; cursor: pointer; padding: 10px; 
-            pointer-events: auto; user-select: none;
-        }
-
-        /* Site Footer */
-        .site-footer {
-            position: absolute; bottom: 10px; width: 100%; text-align: center;
-            color: #444; font-size: 10px; pointer-events: none;
-        }
+        #pause-trigger { font-size: 24px; cursor: pointer; padding: 10px; pointer-events: auto; user-select: none; }
+        .site-footer { position: absolute; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 10px; pointer-events: none; }
+        #controls-hint { margin-top: 20px; font-size: 12px; color: #666; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; }
+        .key { display: inline-block; border: 1px solid #666; padding: 2px 5px; border-radius: 4px; color: #fff; background: #222; font-size: 10px; margin: 0 2px;}
     </style>
 </head>
 <body>
 
     <canvas id="gameCanvas"></canvas>
 
-    <!-- GAME UI -->
+    <!-- UI -->
     <div id="ui-layer" class="hidden">
         <div class="bars-container">
             <div class="bar-bg"><div id="xp-bar"></div></div>
@@ -185,38 +182,34 @@
             </div>
         </div>
 
-        <div id="stick-left" class="joystick-zone"><div class="joystick-base"><div class="joystick-knob"></div></div></div>
-        
-        <div id="shockwave-btn">⚡<div class="cooldown-overlay" id="shock-cd"></div></div>
-        <div id="stick-right" class="joystick-zone"><div class="joystick-base"><div class="joystick-knob"></div></div></div>
+        <!-- MOBILE CONTROLS -->
+        <div id="stick-left" class="joystick-zone mobile-ctrl"><div class="joystick-base"><div class="joystick-knob"></div></div></div>
+        <div id="shockwave-btn" class="mobile-ctrl">⚡<div class="cooldown-overlay" id="shock-cd"></div></div>
+        <div id="stick-right" class="joystick-zone mobile-ctrl"><div class="joystick-base"><div class="joystick-knob"></div></div></div>
+
+        <!-- PC SKILL INDICATOR -->
+        <div id="pc-skill-hud">
+            <div id="pc-skill-label">SHOCKWAVE [SPACE]</div>
+            <div id="pc-skill-bg"><div id="pc-skill-bar"></div></div>
+        </div>
     </div>
 
-    <!-- START MENU -->
+    <!-- SCREENS -->
     <div id="start-screen" class="modal-overlay">
         <h1>NEON<br>VECTOR</h1>
-        <p style="letter-spacing: 5px; color: #fff; margin-bottom: 20px;">BETA 5.2</p>
-        
-        <div id="high-score-display" style="color:#ff0; font-size:18px; margin-bottom:20px; text-shadow:0 0 10px #ff0;">
-            HIGH SCORE: 0
-        </div>
-
+        <p style="letter-spacing: 5px; color: #fff; margin-bottom: 20px;">BETA 5.4</p>
+        <div id="high-score-display" style="color:#ff0; font-size:18px; margin-bottom:20px; text-shadow:0 0 10px #ff0;">HIGH SCORE: 0</div>
         <button id="btn-start" class="btn-neon">JOGAR AGORA</button>
         <button id="btn-full" class="btn-neon" style="border-color:#f0f; color:#f0f;">TELA CHEIA</button>
-        
-        <div style="margin-top: 30px; font-size: 12px; color: #666; max-width: 300px; text-align: center;">
-            Use o Joystick Esquerdo para mover e o Direito para atirar.<br>
-            Derrote Bosses a cada 5 ondas.
-        </div>
+        <div id="controls-hint">Detectando...</div>
         <div class="site-footer">NEON VECTOR PROJECT &copy; 2025</div>
     </div>
 
-    <!-- UPGRADE MENU -->
     <div id="upgrade-modal" class="modal-overlay hidden">
         <h2 id="modal-title">UPGRADE</h2>
         <div class="cards-container" id="cards-wrapper"></div>
     </div>
 
-    <!-- PAUSE MENU -->
     <div id="pause-modal" class="modal-overlay hidden">
         <h1>PAUSA</h1>
         <button id="btn-resume" class="btn-neon">CONTINUAR</button>
@@ -226,7 +219,6 @@
 <script>
 (function() {
 
-/* --- ENGINE CONFIG --- */
 const CONFIG = {
     world: 4000,
     colors: {
@@ -236,7 +228,6 @@ const CONFIG = {
     }
 };
 
-/* --- MATH LIBS --- */
 class Vec {
     constructor(x, y) { this.x = x; this.y = y; }
     add(v) { this.x += v.x; this.y += v.y; return this; }
@@ -277,15 +268,30 @@ class Joy {
 }
 
 const Input = {
-    l: null, r: null, keys: {}, shockOk: true,
+    l: null, r: null, keys: {}, shockOk: true, isPC: false, mPos: {x:window.innerWidth/2,y:window.innerHeight/2}, mDown:false, locked: false,
     init() {
+        this.isPC = !('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        
+        if(this.isPC) {
+            document.body.classList.add('pc-mode');
+            document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'none');
+            document.getElementById('pc-skill-hud').style.display = 'flex';
+            document.getElementById('controls-hint').innerHTML = `PC: <span class="key">WASD</span> Mover • <span class="key">MOUSE</span> Mirar • <span class="key">ESPAÇO</span> Onda de Choque`;
+        } else {
+            document.getElementById('controls-hint').innerHTML = `MOBILE: Use os Joysticks e Toque em ⚡ para Onda de Choque`;
+        }
+
         this.l = new Joy('stick-left'); this.r = new Joy('stick-right');
+        
         window.addEventListener('keydown', e => { 
             this.keys[e.key.toLowerCase()] = true; 
             if(e.code==='Space') this.triggerShock();
             if(e.key==='Escape') Game.togglePause();
         });
         window.addEventListener('keyup', e => this.keys[e.key.toLowerCase()] = false);
+        window.addEventListener('mousemove', e => { this.mPos.x = e.clientX; this.mPos.y = e.clientY; });
+        window.addEventListener('mousedown', () => this.mDown = true);
+        window.addEventListener('mouseup', () => this.mDown = false);
         
         const btn = document.getElementById('shockwave-btn');
         const trigger = (e) => { e.preventDefault(); e.stopPropagation(); this.triggerShock(); };
@@ -293,27 +299,58 @@ const Input = {
         btn.addEventListener('mousedown', trigger);
     },
     getMove() {
+        if(this.locked) return new Vec(0,0);
         let v = this.l.vec.copy();
         if(v.mag()===0) { if(this.keys['w'])v.y-=1; if(this.keys['s'])v.y+=1; if(this.keys['a'])v.x-=1; if(this.keys['d'])v.x+=1; if(v.mag()>0)v.norm(); }
         return v;
     },
-    getAim() { return this.r.vec.copy(); },
+    getAim(pPos, cam) {
+        if(this.locked) return null;
+        if(this.r.active && this.r.vec.mag()>0.1) return this.r.vec.copy();
+        if(this.isPC) {
+            // Screen coords relative to canvas
+            let playerScreenX = pPos.x - cam.x;
+            let playerScreenY = pPos.y - cam.y;
+            return new Vec(this.mPos.x - playerScreenX, this.mPos.y - playerScreenY).norm();
+        }
+        return null;
+    },
     triggerShock() {
-        if(!Game.p || !this.shockOk || Game.p.hp <= 0 || Game.state !== 'run') return;
+        if(this.locked || !Game.p || !this.shockOk || Game.p.hp <= 0 || Game.state !== 'run') return;
         this.shockOk = false; Game.doShockwave();
-        let cd = document.getElementById('shock-cd'); cd.style.height = '100%';
-        document.getElementById('shockwave-btn').classList.add('cooldown');
+        
+        // Update UI
+        let cdBar = document.getElementById('shock-cd');
+        let btn = document.getElementById('shockwave-btn');
+        let pcBar = document.getElementById('pc-skill-bar');
+        
+        if(cdBar) cdBar.style.height = '100%';
+        if(btn) btn.classList.add('cooldown');
+        if(pcBar) { pcBar.parentElement.classList.add('skill-cooldown'); pcBar.parentElement.classList.remove('skill-ready'); }
+
         let start = Date.now(), dur = 5000;
         let i = setInterval(() => {
             if(Game.state === 'paused') dur += 100;
             let p = 1 - (Date.now()-start)/dur;
-            if(p<=0) { clearInterval(i); this.shockOk=true; cd.style.height='0%'; document.getElementById('shockwave-btn').classList.remove('cooldown'); }
-            else cd.style.height = (p*100)+'%';
-        }, 100);
+            
+            if(p<=0) { 
+                clearInterval(i); this.shockOk=true; 
+                if(cdBar) cdBar.style.height='0%'; 
+                if(btn) btn.classList.remove('cooldown');
+                if(pcBar) { 
+                    pcBar.style.width = '100%'; 
+                    pcBar.parentElement.classList.remove('skill-cooldown'); 
+                    pcBar.parentElement.classList.add('skill-ready'); 
+                }
+            } else {
+                if(cdBar) cdBar.style.height = (p*100)+'%';
+                if(pcBar) pcBar.style.width = ((1-p)*100)+'%';
+            }
+        }, 50);
     }
 };
 
-/* --- ENTITIES --- */
+/* --- GAME LOGIC --- */
 class Ent { constructor(x, y, col, r) { this.pos=new Vec(x,y); this.col=col; this.r=r; this.dead=false; } }
 
 class Part extends Ent {
@@ -386,7 +423,6 @@ class Enemy extends Ent {
         this.pos.y = Math.max(100, Math.min(CONFIG.world-100, this.pos.y));
         this.t = t; this.boss = boss; this.push = new Vec(0,0); this.tmr = 0; this.flash = 0;
         let m = Math.min(3, 1 + Game.wave*0.1);
-        
         if(boss) {
             this.hp = 1000 + Game.wave*500; this.xp = 2000; this.r = 60; this.col = CONFIG.colors.boss;
             if(t==='titan') { this.name="TITAN"; this.spd=1.0; }
@@ -451,18 +487,18 @@ class Player extends Ent {
         super(CONFIG.world/2, CONFIG.world/2, CONFIG.colors.p, 15);
         this.hp=100; this.maxHp=100; this.spd=6; this.dmg=15; this.rel=18; this.bSpd=16;
         this.count=1; this.pen=1; this.magnet=80; this.rear=false; this.rico=false; this.bType='normal';
-        this.xp=0; this.nextXp=50; this.lvl=1;
-        this.ang=0; this.rTmr=0; this.iTmr=0; this.lives=0;
+        this.xp=0; this.nextXp=50; this.lvl=1; this.ang=0; this.rTmr=0; this.iTmr=0; this.lives=0;
     }
     upd() {
         let m = Input.getMove(); this.pos.add(m.mult(this.spd));
         this.pos.x = Math.max(0,Math.min(CONFIG.world,this.pos.x)); this.pos.y = Math.max(0,Math.min(CONFIG.world,this.pos.y));
-        let a = Input.getAim();
-        if(a.mag()>0.1) this.ang = Math.atan2(a.y, a.x); else if(m.mag()>0) this.ang = Math.atan2(m.y, m.x);
+        let a = Input.getAim(this.pos, Game.cam);
+        if(a) this.ang = Math.atan2(a.y, a.x); else if(m.mag()>0) this.ang = Math.atan2(m.y, m.x);
         
         if(this.rTmr>0) this.rTmr--; if(this.iTmr>0) this.iTmr--;
         
-        if((Input.firing || (Input.r.active && Input.r.vec.mag()>0.2)) && this.rTmr<=0) {
+        let fire = Input.mDown || (Input.r.active && Input.r.vec.mag()>0.2);
+        if(fire && this.rTmr<=0 && !Input.locked) {
             this.rTmr = this.rel;
             let start = this.ang - (0.15 * (this.count-1))/2;
             for(let i=0; i<this.count; i++) {
@@ -557,12 +593,25 @@ const Game = {
 
         requestAnimationFrame(()=>this.loop());
     },
-    resize() { this.c.width=window.innerWidth; this.c.height=window.innerHeight; },
+    resize() { 
+        this.c.width = window.innerWidth; 
+        this.c.height = window.innerHeight; 
+    },
     
     start() {
         this.p = new Player(); 
         this.es=[]; this.bs=[]; this.ebs=[]; this.parts=[]; this.xps=[]; this.fText=[]; this.as=[];
         this.score=0; this.wave=1; this.wTmr=0; this.boss=null; this.state='run';
+        
+        // INSTANT CAM SNAP to center player properly on start
+        let cx = Math.max(0, Math.min(CONFIG.world-this.c.width, this.p.pos.x - this.c.width/2));
+        let cy = Math.max(0, Math.min(CONFIG.world-this.c.height, this.p.pos.y - this.c.height/2));
+        this.cam = new Vec(cx, cy);
+
+        // LOCK INPUT
+        Input.locked = true;
+        setTimeout(() => Input.locked = false, 500);
+
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('ui-layer').classList.remove('hidden');
         document.getElementById('boss-hud').style.display='none';
@@ -744,12 +793,11 @@ const Game = {
         if(this.score > this.highscore) {
             this.highscore = Math.floor(this.score);
             try { localStorage.setItem('neon_highscore', this.highscore); } catch(e){}
-            document.getElementById('high-score-display').innerText = "NEW HIGH SCORE: " + this.highscore;
+            document.getElementById('high-score-display').innerText = "HIGH SCORE: " + this.highscore;
         }
         
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('ui-layer').classList.add('hidden');
-        document.querySelector('#start-screen h1').innerHTML = "GAME<br>OVER";
     }
 };
 
